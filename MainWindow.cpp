@@ -103,8 +103,8 @@ void DoubleSpinBoxDelegate::updateEditorGeometry(QWidget *editor, const QStyleOp
 
 void MainWindow::UpdateRegisters()
 {
-    QString ireg_pre = generalModel->item(IREG_PREFIX)->text();
-    QString freg_pre = generalModel->item(FREG_PREFIX)->text();
+    QString ireg_pre = "$" + generalModel->item(IREG_PREFIX)->text();
+    QString freg_pre = "$" + generalModel->item(FREG_PREFIX)->text();
     QString tmp;
     int ireg_num = generalModel->item(IREG_NUM)->text().toInt();
     int freg_num = generalModel->item(FREG_NUM)->text().toInt();
@@ -182,8 +182,8 @@ void MainWindow::InitGeneralTV()
     //
     // レジスタ接頭辞
     //
-    model->setItem(row++, 0, new QStandardItem("$r"));
-    model->setItem(row++, 0, new QStandardItem("$f"));
+    model->setItem(row++, 0, new QStandardItem("r"));
+    model->setItem(row++, 0, new QStandardItem("f"));
     //
     // レジスタ数
     //
@@ -245,12 +245,12 @@ void MainWindow::AddRow(
         int row,
         QString instName,
         bool useCheckBox,
-        QString assemblyCode,
+        QString assemblyType,
         QString opcode,
         QString funct,
         QString code)
 {
-    QStandardItem* item = new QStandardItem(assemblyCode); item->setEditable(false);
+    QStandardItem* item = new QStandardItem(assemblyType); item->setEditable(false);
     model->setItem(row, 0, item);
     model->setItem(row, 1, new QStandardItem(instName));
     model->setItem(row, 2, new QStandardItem(opcode));
@@ -259,18 +259,22 @@ void MainWindow::AddRow(
     if (useCheckBox)
     {
         QStandardItem* item0 = new QStandardItem(true);
+        item0->setEditable(false);
         item0->setCheckable(true);
-//        item0->setCheckState(Qt::Checked);
-        item0->setCheckState(Qt::Unchecked);
+        item0->setCheckState(Qt::Checked);
+//        item0->setCheckState(Qt::Unchecked);
         model->setItem(row, 4, item0);
     }
     else
     {
-        QStandardItem* item1 = new QStandardItem("必須"); item1->setEditable(false);
+        QStandardItem* item1 = new QStandardItem("必須");
+        item1->setEditable(false);
         model->setItem(row, 4, item1);
     }
 
-    model->setItem(row, 5, new QStandardItem(code));
+    item = new QStandardItem(code); item->setEditable(false);
+    item->setEditable(false);
+    model->setItem(row, 5, item);
 }
 
 void MainWindow::InitInstTVs()
@@ -284,7 +288,7 @@ void MainWindow::InitInstTVs()
         << "funct\n(6桁以内の2進数)"
         << "使用する？"
         << "擬似コード";
-    QStringList instExplains;
+//    QStringList instExplains;
 
     //
     // バイナリ(opcode)定数
@@ -312,8 +316,8 @@ void MainWindow::InitInstTVs()
     //
     tableModel = new QStandardItemModel();
     int1Model = tableModel;
-    instExplains.clear();
-    instExplains
+    int1Expalains.clear();
+    int1Expalains
         << "値の複製"
         << "たし算"
         << "ひき算"
@@ -349,7 +353,7 @@ void MainWindow::InitInstTVs()
     AddRow(tableModel, cnt++, "xor", true, "op rd, rs, rt", "ALU", "1100","rd <- rs xor rt");
     AddRow(tableModel, cnt++, "not", true, "op rt, rs", "ALU", "1101","rt <- not rs");
     tableModel->setHorizontalHeaderLabels(instHHeader);
-    tableModel->setVerticalHeaderLabels(instExplains);
+    tableModel->setVerticalHeaderLabels(int1Expalains);
     ui->IntTV1->setModel(tableModel);
     ui->IntTV1->resizeColumnsToContents();
     ui->IntTV1->resizeRowsToContents();
@@ -359,8 +363,8 @@ void MainWindow::InitInstTVs()
     //
     tableModel = new QStandardItemModel();
     int2Model = tableModel;
-    instExplains.clear();
-    instExplains
+    int2Expalains.clear();
+    int2Expalains
         << "下位16bitに即値代入"
         << "上位16bitに即値代入"
         << "たし算"
@@ -394,7 +398,7 @@ void MainWindow::InitInstTVs()
     AddRow(tableModel, cnt++, "nori", true, "op rt, rs, imm", "1111", "0","rt <- rs nor imm");
     AddRow(tableModel, cnt++, "xori", true, "op rt, rs, imm", "10000", "0","rt <- rs xor imm");
     tableModel->setHorizontalHeaderLabels(instHHeader);
-    tableModel->setVerticalHeaderLabels(instExplains);
+    tableModel->setVerticalHeaderLabels(int2Expalains);
     ui->IntTV2->setModel(tableModel);
     ui->IntTV2->resizeColumnsToContents();
     ui->IntTV2->resizeRowsToContents();
@@ -404,8 +408,8 @@ void MainWindow::InitInstTVs()
     //
     tableModel = new QStandardItemModel();
     floatModel = tableModel;
-    instExplains.clear();
-    instExplains
+    floatExpalains.clear();
+    floatExpalains
         << "値の複製"
         << "符号反転"
         << "下位16bitに即値代入"
@@ -447,7 +451,7 @@ void MainWindow::InitInstTVs()
     AddRow(tableModel, cnt++, "ftan", true, "op frt, frs", "FPU", "1101", "frt <- ftan(frs)");
     AddRow(tableModel, cnt++, "fatan", true, "op frt, frs", "FPU", "1110", "frt <- fatan(frs)");
     tableModel->setHorizontalHeaderLabels(instHHeader);
-    tableModel->setVerticalHeaderLabels(instExplains);
+    tableModel->setVerticalHeaderLabels(floatExpalains);
     ui->FloatTV->setModel(tableModel);
     ui->FloatTV->resizeColumnsToContents();
     ui->FloatTV->resizeRowsToContents();
@@ -457,8 +461,8 @@ void MainWindow::InitInstTVs()
     //
     tableModel = new QStandardItemModel();
     ifconvModel = tableModel;
-    instExplains.clear();
-    instExplains
+    ifconvExpalains.clear();
+    ifconvExpalains
         << "intをfloatにキャスト"
         << "floatをintにキャスト"
         << "バイナリ列をコピー"
@@ -469,7 +473,7 @@ void MainWindow::InitInstTVs()
     AddRow(tableModel, cnt++, "imovf", true, "op frt, rs", "Move", "100", "frt <- rs");
     AddRow(tableModel, cnt++, "fmovi", true, "op rt, frs", "Move", "101", "rt <- frs");
     tableModel->setHorizontalHeaderLabels(instHHeader);
-    tableModel->setVerticalHeaderLabels(instExplains);
+    tableModel->setVerticalHeaderLabels(ifconvExpalains);
     ui->IFConvTV->setModel(tableModel);
     ui->IFConvTV->resizeColumnsToContents();
     ui->IFConvTV->resizeRowsToContents();
@@ -479,8 +483,8 @@ void MainWindow::InitInstTVs()
     //
     tableModel = new QStandardItemModel();
     memoryModel = tableModel;
-    instExplains.clear();
-    instExplains
+    memoryExpalains.clear();
+    memoryExpalains
         << "メモリから整数レジスタへロード"
         << "整数レジスタをメモリへストア"
         << "メモリから整数レジスタへロード"
@@ -499,7 +503,7 @@ void MainWindow::InitInstTVs()
     AddRow(tableModel, cnt++, "fldr", true, "op frd, rs, rt", "ALU", "10000","frd <- RAM[rs + rt]");
     AddRow(tableModel, cnt++, "fstr", true, "op frd, rs, rt", "ALU", "10001", "RAM[rs + rt] <- frd");
     tableModel->setHorizontalHeaderLabels(instHHeader);
-    tableModel->setVerticalHeaderLabels(instExplains);
+    tableModel->setVerticalHeaderLabels(memoryExpalains);
     ui->MemoryTV->setModel(tableModel);
     ui->MemoryTV->resizeColumnsToContents();
     ui->MemoryTV->resizeRowsToContents();
@@ -510,8 +514,8 @@ void MainWindow::InitInstTVs()
     //
     tableModel = new QStandardItemModel();
     branchModel = tableModel;
-    instExplains.clear();
-    instExplains
+    branchExpalains.clear();
+    branchExpalains
         << "等しい"
         << "等しくない"
         << "より小さい"
@@ -559,7 +563,7 @@ void MainWindow::InitInstTVs()
     AddRow(tableModel, cnt++, "callr", false, "op reg", "100110", "0","RAM[frame pointer] <- link register\nframe pointer--\nlink register <- pc; goto rs");
     AddRow(tableModel, cnt++, "return", false, "op", "100111", "0", "RAM[frame pointer] <- link register\nframe pointer++\ngoto link register");
     tableModel->setHorizontalHeaderLabels(instHHeader);
-    tableModel->setVerticalHeaderLabels(instExplains);
+    tableModel->setVerticalHeaderLabels(branchExpalains);
     ui->BranchTV->setModel(tableModel);
     ui->BranchTV->resizeColumnsToContents();
     ui->BranchTV->resizeRowsToContents();
@@ -569,8 +573,8 @@ void MainWindow::InitInstTVs()
     //
     tableModel = new QStandardItemModel();
     ioModel = tableModel;
-    instExplains.clear();
-    instExplains
+    ioExpalains.clear();
+    ioExpalains
         <<"rs <- ReadByte()"
         <<"rs <- ReadWord()"
         <<"frs <- ReadWord()"
@@ -587,10 +591,39 @@ void MainWindow::InitInstTVs()
     AddRow(tableModel, cnt++, "outputf", true, "op frs", "System", "101","WriteWord(frs)");
     AddRow(tableModel, cnt++, "halt", false, "op", "System", "110", "");
     tableModel->setHorizontalHeaderLabels(instHHeader);
-    tableModel->setVerticalHeaderLabels(instExplains);
+    tableModel->setVerticalHeaderLabels(ioExpalains);
     ui->IOTV->setModel(tableModel);
     ui->IOTV->resizeColumnsToContents();
     ui->IOTV->resizeRowsToContents();
+}
+
+void MainWindow::ChangeRegName(int row, int index, QStringList& iregs)
+{
+    ComboBoxDelegate* cdel = (ComboBoxDelegate*)ui->GeneralTV->itemDelegateForRow(row);
+    cdel->itemList = iregs;
+    ui->GeneralTV->setItemDelegateForRow(row, cdel);
+    generalModel->setItem(row, new QStandardItem(iregs[index]));
+}
+
+void MainWindow::ChangeRegNames(QStandardItem *item)
+{
+    if (item->row() != IREG_PREFIX) return;
+
+    disconnect(generalModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeRegNames(QStandardItem*)));
+    int zr_index = GetRegIndex(generalModel->item(ZR)->text());
+    int fr_index = GetRegIndex(generalModel->item(FR)->text());
+    int hr_index = GetRegIndex(generalModel->item(HR)->text());
+    int lr_index = GetRegIndex(generalModel->item(LR)->text()) + 1;
+    int p1r_index = GetRegIndex(generalModel->item(P1R)->text());
+    int m1r_index = GetRegIndex(generalModel->item(M1R)->text());
+    UpdateRegisters();
+    ChangeRegName(ZR, zr_index, iregs);
+    ChangeRegName(FR, fr_index, iregs);
+    ChangeRegName(HR, hr_index, iregs);
+    ChangeRegName(LR, lr_index, QStringList("専用のレジスタを使用") << iregs);
+    ChangeRegName(P1R, p1r_index, iregs);
+    ChangeRegName(M1R, m1r_index, iregs);
+    connect(generalModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeRegNames(QStandardItem*)));
 }
 
 void MainWindow::ToggleCallMode(QStandardItem* item)
@@ -600,9 +633,7 @@ void MainWindow::ToggleCallMode(QStandardItem* item)
     bool check = item->checkState() == Qt::Checked;
     bool isLow = (lowCell && check) || (highCell && !check);
     bool isHigh = (lowCell && !check) || (highCell && check);
-
     if (!isLow && !isHigh) return;
-
     branchModel->item(LOW_CALL, 4)->setCheckState(isLow ? Qt::Checked : Qt::Unchecked);
     for (int i = LOW_CALL + 1; i <= LOW_CALL + 2; i++)
     {
@@ -624,6 +655,7 @@ MainWindow::MainWindow(QWidget *parent) :
     InitGeneralTV();
     InitInstTVs();
     connect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ToggleCallMode(QStandardItem*)));
+    connect(generalModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeRegNames(QStandardItem*)));
     branchModel->item(LOW_CALL, 4)->setCheckState(Qt::Unchecked);
 }
 
@@ -682,8 +714,8 @@ bool MainWindow::WriteXML(QString filepath)
         }
     }
 
-    QString r = generalModel->item(IREG_PREFIX)->text().replace("%", "%%");
-    QString f = generalModel->item(FREG_PREFIX)->text().replace("%", "%%");
+    QString r = "$" + generalModel->item(IREG_PREFIX)->text().trimmed();
+    QString f = "$" + generalModel->item(FREG_PREFIX)->text().trimmed();
     QString tmp;
     int zr_index = GetRegIndex(generalModel->item(ZR)->text());
     int fr_index = GetRegIndex(generalModel->item(FR)->text());
@@ -855,17 +887,187 @@ bool MainWindow::WriteXML(QString filepath)
             << "</architecture>\n";
 
     file.close();
+    return true;
+}
+
+bool MainWindow::ErrorMsg(QString msg)
+{
+    QMessageBox::critical(NULL, "設定エラー", msg, QMessageBox::Ok);
+    return false;
+}
+
+bool MainWindow::ValidString(QString str)
+{
+    if (str.length() <= 0) return false;
+    for (int i = 0; i < str.length(); i++)
+    {
+        if ((str[i] < 'A' || 'z' < str[i]) && str[i] != '_') return false;
+    }
+    return true;
+}
+
+bool MainWindow::ValidBinary(QString str, int length)
+{
+    if (str.length() <= 0 || length < str.length()) return false;
+    for (int i = 0; i < str.length(); i++)
+    {
+        if (str[i] != '1' && str[i] != '0') return false;
+    }
+    return true;
+}
+
+bool MainWindow::IsConstBinaryName(QString str)
+{
+    for (int row = 0; row < constModel->rowCount(); row++)
+    {
+        QString name = constModel->item(row, 0)->text();
+        if (name == str) return true;
+    }
+    return false;
+}
+
+QString MainWindow::GetConstBinaryValue(QString str)
+{
+    for (int row = 0; row < constModel->rowCount(); row++)
+    {
+        QString name = constModel->item(row, 0)->text();
+        if (name == str) return constModel->item(row, 1)->text();
+    }
+    return "";
+}
+
+void MainWindow::CheckModel(QStandardItemModel* model, QString tabName, QStringList explains, QHash<QString,QString>& binaryTable,bool& flg, QString& msg)
+{
+    QString tmp;
+    const QString BINARY_LEN_STR = tmp.number(BINARY_LENGTH);
+    for (int row = 0; row < model->rowCount(); row++)
+    {
+        if (model->item(row, 0)->text().isEmpty()) continue;
+        QString name = model->item(row, 1)->text();
+        QString op = model->item(row, 2)->text();
+        QString funct = model->item(row, 3)->text();
+        if (!ValidString(name))
+        {
+            flg = false;
+            msg += tabName + "「" + explains[row] + "」: 命令名は半角アルファベットまたは_（アンダーバー）のみからなる文字列でなくてはいけません\n\n";
+        }
+        if (!IsConstBinaryName(op) && !ValidBinary(op, BINARY_LENGTH))
+        {
+            flg = false;
+            msg += tabName + "「" + explains[row] + "」: opの値は" + BINARY_LEN_STR + "文字以下の2進数かバイナリ定数名でなくてはいけません\n\n";
+        }
+        if (!ValidBinary(funct, BINARY_LENGTH))
+        {
+            flg = false;
+            msg += tabName + "「" + explains[row] + "」: functの値は" + BINARY_LEN_STR + "文字以下の2進数でなくてはいけません\n\n";
+        }
+        QString opbin = IsConstBinaryName(op) ? GetConstBinaryValue(op) : op;
+        QString binary = opbin + "-" + funct;
+        bool use =  model->item(row, 4)->text() == "必須" || model->item(row, 4)->checkState() == Qt::Checked;
+        if (use)
+        {
+            if (binaryTable.contains(binary))
+            {
+                flg = false;
+                msg += tabName + "「" + explains[row] + "」: op, functの値が" + binaryTable[binary] + " と同じです\n\n";
+            }
+            else
+            {
+                binaryTable[binary] = tabName + "「" + explains[row] + "」";
+            }
+        }
+    }
+}
+
+bool MainWindow::CheckSettings()
+{
+    bool flg = true;
+    QString msg = "";
+    QString tmp;
+    const QString BINARY_LEN_STR = tmp.number(BINARY_LENGTH);
+
+    //
+    // レジスタの接頭辞について
+    //
+    QString ireg_prefix = generalModel->item(IREG_PREFIX)->text();
+    QString freg_prefix = generalModel->item(FREG_PREFIX)->text();
+    if (ireg_prefix.isEmpty() || freg_prefix.isEmpty())
+    {
+        flg = false;
+        msg += "レジスタの接頭辞は空文字列ではいけません\n\n";
+    }
+    if (ireg_prefix == freg_prefix)
+    {
+        flg = false;
+        msg += "整数・浮動小数レジスタの接頭辞は互いに異なっていなくてはいけません\n\n";
+    }
+    if (!ValidString(ireg_prefix) || !ValidString((freg_prefix)))
+    {
+        flg = false;
+        msg += "整数・浮動小数レジスタの接頭辞は半角アルファベットまたは_（アンダーバー）のみからなる文字列でなくてはいけません\n\n";
+    }
+
+    //
+    // リンクレジスタについて
+    //
+    int lr_index = GetRegIndex(generalModel->item(LR)->text());
+    if (lr_index < 0)
+    {
+        // jal使う時は専用レジスタは使えない
+        if (branchModel->item(LOW_CALL, 4)->checkState() == Qt::Checked)
+        {
+            flg = false;
+            msg += "低機能な関数呼び出しを使うとき、専用レジスタをリンクレジスタとして使うことはできません。\n\n";
+        }
+    }
+
+    //
+    // バイナリ定数について
+    //
+    for (int row = 0; row < constModel->rowCount(); row++)
+    {
+        QString name = constModel->item(row, 0)->text();
+        QString value = constModel->item(row, 1)->text();
+        if (!ValidString(name))
+        {
+            flg = false;
+            msg += "バイナリ定数名は半角アルファベットまたは_（アンダーバー）のみからなる文字列でなくてはいけません\n\n";
+        }
+        if (!ValidBinary(value, BINARY_LENGTH))
+        {
+            flg = false;
+            msg += "バイナリ定数の値は" + BINARY_LEN_STR + "文字以下の2進数でなくてはいけません\n\n";
+        }
+    }
+
+    //
+    // 各命令について
+    //
+
+    QHash<QString, QString> binaryTable;
+    CheckModel(int1Model, "整数演算1", int1Expalains, binaryTable, flg, msg);
+    CheckModel(int2Model, "整数演算2", int2Expalains, binaryTable, flg, msg);
+    CheckModel(floatModel, "浮動小数演算", floatExpalains, binaryTable, flg, msg);
+    CheckModel(ifconvModel, "整数・浮動小数変換", ifconvExpalains, binaryTable, flg, msg);
+    CheckModel(memoryModel, "メモリアクセス", memoryExpalains, binaryTable, flg, msg);
+    CheckModel(branchModel, "分岐・ジャンプ", branchExpalains, binaryTable, flg, msg);
+    CheckModel(ioModel, "入出力", ioExpalains, binaryTable, flg, msg);
+
+    if (flg == false)
+    {
+        return ErrorMsg(msg);
+    }
 
     return true;
 }
 
 void MainWindow::CreateArchitecture()
 {
+    if (CheckSettings() == false) return;
     QString filepath = QFileDialog::getExistingDirectory(this, "アーキテクチャを作成場所を選んでください", ".");
     if (filepath == "" || !QDir(filepath).exists()) return;
-    generalModel->item(IREG_PREFIX)->text();
     QString configFile = generalModel->item(ARCHITECTURE)->text() + ".xml";
-    WriteXML("templates/" + configFile);
+    if (WriteXML("templates/" + configFile) == false) return;
     genDlg.Run("../" + configFile, filepath + "/" + generalModel->item(ARCHITECTURE)->text());
     genDlg.show();
 }

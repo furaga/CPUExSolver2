@@ -31,6 +31,13 @@ private:
     QStandardItemModel* memoryModel;
     QStandardItemModel* branchModel;
     QStandardItemModel* ioModel;
+    QStringList int1Expalains;
+    QStringList int2Expalains;
+    QStringList floatExpalains;
+    QStringList ifconvExpalains;
+    QStringList memoryExpalains;
+    QStringList branchExpalains;
+    QStringList ioExpalains;
     // GeneralTableViewのデータ取得用
     static const int ARCHITECTURE = 0;
     static const int ENDIAN = 1;
@@ -50,6 +57,7 @@ private:
     static const int LR = 15;
     static const int P1R = 16;
     static const int M1R = 17;
+    static const int BINARY_LENGTH = 6;
     //
     int ADD_ROW;
     int SUB_ROW;
@@ -67,15 +75,24 @@ private:
     void AddRow(QStandardItemModel*, int, QString, bool, QString, QString, QString, QString);
     void InitGeneralTV();
     void InitInstTVs();
+    void ChangeRegName(int, int, QStringList&);
     int GetRegIndex(QString);
     QString GetInstTag(QStandardItemModel*, int, QString, bool, bool);
     QString GetInstTag(QStandardItemModel*, int, QString, bool);
+    bool ValidString(QString);
+    bool ValidBinary(QString, int);
+    bool IsConstBinaryName(QString);
+    QString GetConstBinaryValue(QString);
+    bool ErrorMsg(QString);
+    void CheckModel(QStandardItemModel*, QString, QStringList, QHash<QString,QString>&, bool&, QString&);
+    bool CheckSettings();
     bool WriteXML(QString);
 
 private slots:
 
     void CreateArchitecture();
-    void ToggleCallMode(QStandardItem* item);
+    void ChangeRegNames(QStandardItem* item);
+    void ToggleCallMode(QStandardItem* item);    
 };
 
 class ComboBoxDelegate : public QItemDelegate
