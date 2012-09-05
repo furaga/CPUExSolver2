@@ -1,0 +1,242 @@
+<%
+	comment = xmlroot.find(".//comment").get("text")
+	direction =  xmlroot.find(".//binary").get("direction")
+	
+	def getInst(type):
+		inst = xmlroot.find(".//" + type)
+		assert inst is not None, "inst is None(" + type + ")"
+		return inst
+	
+	def getName(type):
+		name = getInst(type).get("name")
+		name is not None, "name is None(" + type + ")"
+		return name
+
+	def isUse(type):
+		use = getInst(type).get("use", "true")
+		return use != "false"
+	
+	def getArgTypes(formAsm):
+		formAsm = filter(lambda ch: ch in "RFILD", formAsm)
+		if len(formAsm) == 0:
+			return ""
+		ans = " of "
+		for ch in formAsm:
+			if ch in "RFL":
+				ans += "Id.t * "
+			elif ch in "I":
+				ans += "int * "
+			elif ch in "D":
+				ans += "float * "
+		return ans[:-3]
+		
+%>(* Emitの出力を加工して、無駄な部分を省く *)
+
+type t =
+	| Comment of string
+	| Label of Id.t
+	| JCmp of Id.t * Id.t * Id.t * Id.t
+	| SetL of Id.t * Id.t
+	| FSet of Id.t * float
+	| FMvhi of Id.t * int
+	| FMvlo of Id.t * int
+	| Mvhi of Id.t * int
+	| Mvlo of Id.t * int
+	| Mov of Id.t * Id.t
+	| FMov of Id.t * Id.t
+	| FNeg of Id.t * Id.t
+	| Add of Id.t * Id.t * Id.t
+	| Sub of Id.t * Id.t * Id.t
+	| Mul of Id.t * Id.t * Id.t
+	| Div of Id.t * Id.t * Id.t
+	| SLL of Id.t * Id.t * Id.t
+	| Addi of Id.t * Id.t * int
+	| Subi of Id.t * Id.t * int
+	| Muli of Id.t * Id.t * int
+	| Divi of Id.t * Id.t * int
+	| SLLi of Id.t * Id.t * int
+	| SRLi of Id.t * Id.t * int
+	| FAdd of Id.t * Id.t * Id.t
+	| FSub of Id.t * Id.t * Id.t
+	| FMul of Id.t * Id.t * Id.t
+	| FDiv of Id.t * Id.t * Id.t
+	| FPI of Id.t * Id.t * Id.t
+	| FAbs of Id.t * Id.t
+	| FInv of Id.t * Id.t
+	| FMovI of Id.t * Id.t
+	| IMovF of Id.t * Id.t
+	| Ld of Id.t * Id.t * Id.t
+	| St of Id.t * Id.t * Id.t
+	| Ldi of Id.t * Id.t * int
+	| Sti of Id.t * Id.t * int
+	| LdF of Id.t * Id.t * Id.t
+	| StF of Id.t * Id.t * Id.t
+	| LdFi of Id.t * Id.t * int
+	| StFi of Id.t * Id.t * int
+	| Input of Id.t
+	| InputW of Id.t
+	| InputF of Id.t
+	| Output of Id.t
+	| OutputW of Id.t
+	| OutputF of Id.t
+	| B of Id.t
+	| Jmp of Id.t
+	| Jal of Id.t
+	| Jarl of Id.t
+	| Call of Id.t
+	| CallR of Id.t
+	| Return
+	| Halt
+
+type state = Exist | Vanish
+	
+type stmt = {
+	inst : t;
+	mutable state : state
+}
+
+let prog = ref []
+let add_stmt inst = prog := {inst = inst; state = Exist} :: !prog
+
+% if isUse("ADDI") and isUse("SUBI"):
+## TODO 面倒くさいしやんなくていいかな
+(* %g1の無駄な増減を削除 *)
+let get_some x = match x with Some a -> a | _ -> assert false
+let eliminate_sp_calc ls =
+	List.fold_left (
+		fun target stmt ->
+			match stmt.inst with
+				| Addi (x, y, n) when target <> None && x = Asm.reg_sp && y = Asm.reg_sp ->
+					(match (get_some target).inst with
+						| Subi (x2, y2, n2) when n = n2 ->
+							(get_some target).state <- Vanish;
+							stmt.state <- Vanish;
+							None
+						| _ -> None
+					)
+				| Subi (x, y, n) when target <> None && x = Asm.reg_sp && y = Asm.reg_sp -> 
+					(match (get_some target).inst with
+						| Addi (x2, y2, n2) when n = n2 ->
+							(get_some target).state <- Vanish;
+							stmt.state <- Vanish;
+							None
+						| _ -> None
+					)
+				| Addi (x, y, n) when x = Asm.reg_sp && y = Asm.reg_sp -> Some stmt
+				| Subi (x, y, n) when x = Asm.reg_sp && y = Asm.reg_sp -> Some stmt
+				| Label _
+				| B _
+				| Jmp _
+				| JCmp _
+				| Jal _
+				| Jarl _
+				| Call _
+				| CallR _
+				| Return
+				| Halt -> None
+				| Ld (x, y, _) 
+				| St (x, y, _)
+				| Ldi (x, y, _) 
+				| Sti (x, y, _)
+				| LdF (x, y, _)
+				| StF (x, y, _)
+				| LdFi (x, y, _)
+				| StFi (x, y, _) when x = Asm.reg_sp || y = Asm.reg_sp -> None
+				| _ -> target
+	) None ls
+
+(* 最適化 *)
+let optimize () = eliminate_sp_calc !prog
+
+% endif
+(* 一文を出力 *)
+let output_stmt oc stmt =
+	if stmt.state = Vanish then ()
+	else (
+		(match stmt.state with
+			| Exist -> ()
+			| Vanish -> Printf.fprintf oc "${comment} "
+		);
+		match stmt.inst with
+			| Comment comment -> Printf.fprintf oc "%s\n" comment
+			| Label label -> Printf.fprintf oc "%s:\n" label
+			| SetL (dst, label) -> 	Printf.fprintf oc "\t${getName("SETL")} %s, %s\n" dst label (* ラベルのコピー *)
+			| FSet (dst, f) -> 	Printf.fprintf oc "\t${getName("FSET")} %s, %.20E\n" dst f
+			| FMvhi (dst, n) -> Printf.fprintf oc "\t${getName("FSETHI")}\t%s, %d\n" dst n
+			| FMvlo (dst, n) -> Printf.fprintf oc "\t${getName("FSETLO")}\t%s, %d\n" dst n
+			| Mvhi (dst, n) -> Printf.fprintf oc "\t${getName("SETHI")}\t%s, %d\n" dst n
+			| Mvlo (dst, n) -> Printf.fprintf oc "\t${getName("SETLO")}\t%s, %d\n" dst n
+			| Mov (dst, src) -> Printf.fprintf oc "\t${getName("MOV")}\t%s, %s\n" dst src
+			| FMov (dst, src) -> Printf.fprintf oc "\t${getName("FMOV")}\t%s, %s\n" dst src
+			| FNeg (dst, src) -> Printf.fprintf oc "\t${getName("FNEG")}\t%s, %s\n" dst src
+			| Add (dst, x, y) -> Printf.fprintf oc "\t${getName("ADD")}\t%s, %s, %s\n" dst x y
+			| Sub (dst, x, y) -> Printf.fprintf oc "\t${getName("SUB")}\t%s, %s, %s\n" dst x y
+			| Mul (dst, x, y) -> Printf.fprintf oc "\t${getName("MUL")}\t%s, %s, %s\n" dst x y
+			| Div (dst, x, y) -> Printf.fprintf oc "\t${getName("DIV")}\t%s, %s, %s\n" dst x y
+			(* コンパイラでSLLが発行されることは現状ない *)
+% if isUse("SLL"):
+			| SLL (dst, x, y) -> Printf.fprintf oc "\t${getName("SLL")}\t%s, %s, %s\n" dst x y
+% elif isUse("SHIFT"):
+			| SLL (dst, x, y) -> Printf.fprintf oc "\t${getName("SHIFT")}\t%s, %s, %s\n" dst x y
+% else:
+			| SLL (dst, x, y) -> failwith "this architecture must support sll or shift."
+% endif
+			| Addi (dst, x, y) -> Printf.fprintf oc "\t${getName("ADDI")}\t%s, %s, %d\n" dst x y
+			| Subi (dst, x, y) -> Printf.fprintf oc "\t${getName("SUBI")}\t%s, %s, %d\n" dst x y
+			| Muli (dst, x, y) -> Printf.fprintf oc "\t${getName("MULI")}\t%s, %s, %d\n" dst x y
+			| Divi (dst, x, y) -> Printf.fprintf oc "\t${getName("DIVI")}\t%s, %s, %d\n" dst x y
+% if isUse("SLLI"):
+			| SLLi (dst, x, y) -> Printf.fprintf oc "\t${getName("SLLI")}\t%s, %s, %d\n" dst x y
+% elif isUse("SHIFTI"):
+			| SLLi (dst, x, y) -> Printf.fprintf oc "\t${getName("SHIFTI")}\t%s, %s, %d\n" dst x y
+% else:
+			| SLLi (dst, x, y) -> failwith "this architecture must support slli or shifti."
+% endif
+% if isUse("SRAI"):
+			| SRLi (dst, x, y) -> Printf.fprintf oc "\t${getName("SRAI")}\t%s, %s, %d\n" dst x y
+% elif isUse("SHIFTI"):
+			| SRLi (dst, x, y) -> Printf.fprintf oc "\t${getName("SHIFTI")}\t%s, %s, %d\n" dst x (-y)
+% else:
+			| SRLi (dst, x, y) -> failwith "this architecture must support srli or shifti."
+% endif
+			| FAdd (dst, x, y) -> Printf.fprintf oc "\t${getName("FADD")}\t%s, %s, %s\n" dst x y
+			| FSub (dst, x, y) -> Printf.fprintf oc "\t${getName("FSUB")}\t%s, %s, %s\n" dst x y
+			| FMul (dst, x, y) -> Printf.fprintf oc "\t${getName("FMUL")}\t%s, %s, %s\n" dst x y
+			| FDiv (dst, x, y) -> Printf.fprintf oc "\t${getName("FDIV")}\t%s, %s, %s\n" dst x y
+			| FPI (op, dst, src) -> Printf.fprintf oc "\t%s\t%s, %s\n" op dst src
+			| FAbs (dst, src) -> Printf.fprintf oc "\t${getName("FABS")}\t%s, %s\n" dst src
+
+			| FInv (dst, src) -> Printf.fprintf oc "\t${getName("FINV")}\t%s, %s\n" dst src
+			| FMovI (dst, src) -> Printf.fprintf oc "\t${getName("FMOVI")}\t%s, %s\n" dst src
+			| IMovF (dst, src) -> Printf.fprintf oc "\t${getName("IMOVF")}\t%s, %s\n" dst src
+
+% if direction == "toBig":
+			(* 即値バージョンのLd, St系では、大人の事情によりindexの符号が逆になってしまっているので符号を反転させる。 *)
+% endif
+			| Ld (dst, src, index) -> Printf.fprintf oc "\t${getName("LD")}\t%s, %s, %s\n" dst src index
+			| Ldi (dst, src, index) -> Printf.fprintf oc "\t${getName("LDI")}\t%s, %s, %d\n" dst src ${"index" if direction != "toBig" else "(-index)"};
+			| LdF (dst, src, index) -> Printf.fprintf oc "\t${getName("FLD")}\t%s, %s, %s\n" dst src index
+			| LdFi (dst, src, index) -> Printf.fprintf oc "\t${getName("FLDI")}\t%s, %s, %d\n" dst src ${"index" if direction != "toBig" else "(-index)"};
+			| St (src, target, index) -> Printf.fprintf oc "\t${getName("ST")}\t%s, %s, %s\n" src target index
+			| Sti (src, target, index) -> Printf.fprintf oc "\t${getName("STI")}\t%s, %s, %d\n" src target ${"index" if direction != "toBig" else "(-index)"};
+			| StF (src, target, index) -> Printf.fprintf oc "\t${getName("FST")}\t%s, %s, %s\n" src target index
+			| StFi (src, target, index) -> Printf.fprintf oc "\t${getName("FSTI")}\t%s, %s, %d\n" src target ${"index" if direction != "toBig" else "(-index)"};
+			| Input src -> 	Printf.fprintf oc "\t${getName("INPUTBYTE")}\t%s\n" src
+			| InputW src -> Printf.fprintf oc "\t${getName("INPUTWORD")}\t%s\n" src
+			| InputF src -> Printf.fprintf oc "\t${getName("INPUTFLOAT")}\t%s\n" src
+			| Output dst -> Printf.fprintf oc "\t${getName("OUTPUTBYTE")}\t%s\n" dst
+			| OutputW dst -> Printf.fprintf oc "\t${getName("OUTPUTWORD")}\t%s\n" dst
+			| OutputF dst -> Printf.fprintf oc "\t${getName("OUTPUTFLOAT")}\t%s\n" dst
+			| B reg -> Printf.fprintf oc "\t${getName("JMPREG")}\t%s\n" reg
+			| Jmp label -> Printf.fprintf oc "\t${getName("BRANCH")}\t%s\n" label
+			| JCmp (typ, x, y, label) -> Printf.fprintf oc "\t%s\t%s, %s, %s\n" typ x y label
+			| Jal label -> Printf.fprintf oc "\t${getName("JMP_LNK")}\t%s\n" label
+			| Jarl cls -> Printf.fprintf oc "\t${getName("JMPREG_LNK")}\t%s\n" cls
+			| Call label -> Printf.fprintf oc "\t${getName("CALL")}\t%s\n" label
+			| CallR cls -> Printf.fprintf oc "\t${getName("CALLREG")}\t%s\n" cls
+			| Return -> Printf.fprintf oc "\t${getName("RETURN")}\n"
+			| Halt -> Printf.fprintf oc "\t${getName("HALT")}\n"
+	)
+
+(* 出力 *)
+let output oc = List.iter (output_stmt oc) (List.rev !prog)

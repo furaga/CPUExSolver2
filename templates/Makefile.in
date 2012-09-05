@@ -1,0 +1,20 @@
+# Makefile.in
+CC = g++
+CXX = g++
+LD = g++
+RM = rm -f
+CFLAGS = -O3 -funroll-loops
+CXXFLAGS = -O3 -funroll-loops
+LDFLAGS = -O3 -lm
+
+RENDERER=../renderer.py
+#CONFIGFILE=../architecture_IKA.xml
+CONFIGFILE=../manga.xml
+
+DSTDIR_TOP = ${abspath dst}
+DSTDIR = ${abspath ../dst}
+INCDIR = $(DSTDIR)/include
+COMDIR = $(DSTDIR)/compiler
+LNKDIR = $(DSTDIR)/linker
+ASMDIR = $(DSTDIR)/assembler
+SIMDIR = $(DSTDIR)/simulator
