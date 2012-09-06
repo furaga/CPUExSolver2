@@ -9,7 +9,6 @@ QT       += core gui
 TARGET = CPUExSolver2
 TEMPLATE = app
 
-
 SOURCES += main.cpp\
         MainWindow.cpp \
     GenerateDialog.cpp

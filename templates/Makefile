@@ -13,6 +13,7 @@ all: $(DSTDIR_TOP)
 	make $(MAKE_OPTION) $(DSTDIR_TOP)/Makefile_f
 	make $(MAKE_OPTION) $(DSTDIR_TOP)/Makefile.in_f
 	make $(MAKE_OPTION) $(DSTDIR_TOP)/README.txt_f
+	make $(MAKE_OPTION) $(DSTDIR_TOP)/specifications.csv_f
 	make $(MAKE_OPTION) $(DSTDIR_TOP)/test_f
 
 compiler: $(DSTDIR_TOP)
@@ -41,6 +42,9 @@ $(DSTDIR_TOP)/Makefile.in_f: $(DSTDIR_TOP) Makefile.in.tmpl
 
 $(DSTDIR_TOP)/README.txt_f: $(DSTDIR_TOP) README.txt.tmpl
 	cp README.txt.tmpl $(DSTDIR_TOP)/README.txt
+
+$(DSTDIR_TOP)/specifications.csv_f: $(DSTDIR_TOP) specifications.csv.tmpl
+	cp specifications.csv.tmpl $(DSTDIR_TOP)/specifications.csv
 
 $(DSTDIR_TOP)/test_f: $(DSTDIR_TOP) test
 	cp -r test $(DSTDIR_TOP)/test

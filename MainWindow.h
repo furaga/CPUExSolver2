@@ -31,6 +31,7 @@ private:
     QStandardItemModel* memoryModel;
     QStandardItemModel* branchModel;
     QStandardItemModel* ioModel;
+    QStringList generalOptions;
     QStringList int1Expalains;
     QStringList int2Expalains;
     QStringList floatExpalains;
@@ -72,7 +73,7 @@ private:
     GenerateDialog genDlg;
 
     void UpdateRegisters();
-    void AddRow(QStandardItemModel*, int, QString, bool, QString, QString, QString, QString);
+    void AddRow(QStandardItemModel*, int, QString, bool, QString, QString, QString, QString, QString);
     void InitGeneralTV();
     void InitInstTVs();
     void ChangeRegName(int, int, QStringList&);
@@ -87,12 +88,16 @@ private:
     void CheckModel(QStandardItemModel*, QString, QStringList, QHash<QString,QString>&, bool&, QString&);
     bool CheckSettings();
     bool WriteXML(QString);
+    QString ReformBinaryValue(QString, int);
+    bool WriteTVsToCSV(QStandardItemModel*, QStringList&, QTextStream&);
+    bool WriteCSV(QString);
 
 private slots:
 
     void CreateArchitecture();
     void ChangeRegNames(QStandardItem* item);
-    void ToggleCallMode(QStandardItem* item);    
+    void ChangeAsmForm(QStandardItem* item);
+    void ToggleCallMode(QStandardItem* item);
 };
 
 class ComboBoxDelegate : public QItemDelegate

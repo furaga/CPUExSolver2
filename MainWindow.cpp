@@ -122,8 +122,7 @@ void MainWindow::UpdateRegisters()
 
 void MainWindow::InitGeneralTV()
 {
-    QStringList optionNames;
-    optionNames
+    generalOptions
         << "アーキテクチャ名"
         << "バイナリファイルのエンディアン"
         << "ROM（命令メモリを格納する領域）サイズ"
@@ -234,7 +233,7 @@ void MainWindow::InitGeneralTV()
     ui->GeneralTV->setItemDelegateForRow(row, cdel);
     model->setItem(row++, 0, new QStandardItem(iregs[iregs.length() - 1]));
 
-    model->setVerticalHeaderLabels(optionNames);
+    model->setVerticalHeaderLabels(generalOptions);
     ui->GeneralTV->setModel(model);
     ui->GeneralTV->resizeColumnsToContents();
     ui->GeneralTV->resizeRowsToContents();
@@ -245,16 +244,24 @@ void MainWindow::AddRow(
         int row,
         QString instName,
         bool useCheckBox,
-        QString assemblyType,
+        QString args,
         QString opcode,
         QString funct,
-        QString code)
+        QString code,
+        QString binForm)
 {
-    QStandardItem* item = new QStandardItem(assemblyType); item->setEditable(false);
+    QStandardItem* item = new QStandardItem(instName + " " + args); item->setEditable(false);
     model->setItem(row, 0, item);
     model->setItem(row, 1, new QStandardItem(instName));
     model->setItem(row, 2, new QStandardItem(opcode));
-    model->setItem(row, 3, new QStandardItem(funct));
+
+    if (binForm == "R") model->setItem(row, 3, new QStandardItem(funct));
+    else
+    {
+        QStandardItem* item = new QStandardItem(args.isEmpty() ? "" : "0 (使わない)");
+        item->setEditable(false);
+        model->setItem(row, 3, item);
+    }
 
     if (useCheckBox)
     {
@@ -275,6 +282,9 @@ void MainWindow::AddRow(
     item = new QStandardItem(code); item->setEditable(false);
     item->setEditable(false);
     model->setItem(row, 5, item);
+    item = new QStandardItem(binForm); item->setEditable(false);
+    item->setEditable(false);
+    model->setItem(row, 6, item);
 }
 
 void MainWindow::InitInstTVs()
@@ -286,9 +296,9 @@ void MainWindow::InitInstTVs()
         << "命令名"
         << "opcode\n(6桁以内の2進数\nまたはバイナリ定数)"
         << "funct\n(6桁以内の2進数)"
-        << "使用する？"
-        << "擬似コード";
-//    QStringList instExplains;
+        << "この命令使う？"
+        << "擬似コード"
+        << "バイナリ形式";
 
     //
     // バイナリ(opcode)定数
@@ -334,24 +344,24 @@ void MainWindow::InitInstTVs()
         << "排他的論理和"
         << "ビット反転";
     cnt = 0;
-    AddRow(tableModel, cnt++, "mov", true, "op rt, rs", "Move", "0", "rt <- rs");
+    AddRow(tableModel, cnt++, "mov", true, "rt, rs", "Move", "0", "rt <- rs", "R");
     ADD_ROW = cnt;
-    AddRow(tableModel, cnt++, "add", false, "op rd, rs, rt", "ALU", "0", "rd <- rs + rt");
+    AddRow(tableModel, cnt++, "add", false, "rd, rs, rt", "ALU", "0", "rd <- rs + rt", "R");
     SUB_ROW = cnt;
-    AddRow(tableModel, cnt++, "sub", false, "op rd, rs, rt", "ALU", "1","rd <- rs - rt");
-    AddRow(tableModel, cnt++, "mul", true, "op rd, rs, rt", "ALU", "10","rd <- rs * rt");
-    AddRow(tableModel, cnt++, "div", true, "op rd, rs, rt", "ALU", "11","rd <- rs / rt");
-    AddRow(tableModel, cnt++, "sll", true, "op rd, rs, rt", "ALU", "100","rd <- rs << rt");
-    AddRow(tableModel, cnt++, "srl", true, "op rd, rs, rt", "ALU", "101","rd <- rs >> rt");
-    AddRow(tableModel, cnt++, "sla", true, "op rd, rs, rt", "ALU", "110","rd <- rs << rt");
-    AddRow(tableModel, cnt++, "sra", true, "op rd, rs, rt", "ALU", "111","rd <- rs >> rt");
-    AddRow(tableModel, cnt++, "shift", true, "op rd, rs, rt", "ALU", "1000","rd <- rs shift rt");
-    AddRow(tableModel, cnt++, "and", true, "op rd, rs, rt", "ALU", "1001","rd <- rs & rt");
-    AddRow(tableModel, cnt++, "or", true, "op rd, rs, rt", "ALU", "1010","rd <- rs | rt");
+    AddRow(tableModel, cnt++, "sub", false, "rd, rs, rt", "ALU", "1","rd <- rs - rt", "R");
+    AddRow(tableModel, cnt++, "mul", true, "rd, rs, rt", "ALU", "10","rd <- rs * rt", "R");
+    AddRow(tableModel, cnt++, "div", true, "rd, rs, rt", "ALU", "11","rd <- rs / rt", "R");
+    AddRow(tableModel, cnt++, "sll", true, "rd, rs, rt", "ALU", "100","rd <- rs << rt", "R");
+    AddRow(tableModel, cnt++, "srl", true, "rd, rs, rt", "ALU", "101","rd <- rs >> rt", "R");
+    AddRow(tableModel, cnt++, "sla", true, "rd, rs, rt", "ALU", "110","rd <- rs << rt", "R");
+    AddRow(tableModel, cnt++, "sra", true, "rd, rs, rt", "ALU", "111","rd <- rs >> rt", "R");
+    AddRow(tableModel, cnt++, "shift", true, "rd, rs, rt", "ALU", "1000","rd <- rs shift rt", "R");
+    AddRow(tableModel, cnt++, "and", true, "rd, rs, rt", "ALU", "1001","rd <- rs & rt", "R");
+    AddRow(tableModel, cnt++, "or", true, "rd, rs, rt", "ALU", "1010","rd <- rs | rt", "R");
     NOR_ROW = cnt;
-    AddRow(tableModel, cnt++, "nor", true, "op rd, rs, rt", "ALU", "1011","rd <- rs nor rt");
-    AddRow(tableModel, cnt++, "xor", true, "op rd, rs, rt", "ALU", "1100","rd <- rs xor rt");
-    AddRow(tableModel, cnt++, "not", true, "op rt, rs", "ALU", "1101","rt <- not rs");
+    AddRow(tableModel, cnt++, "nor", true, "rd, rs, rt", "ALU", "1011","rd <- rs nor rt", "R");
+    AddRow(tableModel, cnt++, "xor", true, "rd, rs, rt", "ALU", "1100","rd <- rs xor rt", "R");
+    AddRow(tableModel, cnt++, "not", true, "rt, rs", "ALU", "1101","rt <- not rs", "R");
     tableModel->setHorizontalHeaderLabels(instHHeader);
     tableModel->setVerticalHeaderLabels(int1Expalains);
     ui->IntTV1->setModel(tableModel);
@@ -381,22 +391,22 @@ void MainWindow::InitInstTVs()
         << "論理否定和"
         << "排他的論理和";
     cnt = 0;
-    AddRow(tableModel, cnt++, "mvlo", false, "op rs, imm", "10001", "0","rs[0:15] <- imm");
-    AddRow(tableModel, cnt++, "mvhi", false, "op rs, imm", "10010", "0","rs[16:31] <- imm");
+    AddRow(tableModel, cnt++, "mvlo", false, "rs, imm", "10001", "0","rs[0:15] <- imm", "I");
+    AddRow(tableModel, cnt++, "mvhi", false, "rs, imm", "10010", "0","rs[16:31] <- imm", "I");
     ADDI_ROW = cnt;
-    AddRow(tableModel, cnt++, "addi", true, "op rt, rs, imm", "100", "0","rt <- rs + imm");
-    AddRow(tableModel, cnt++, "subi", true, "op rt, rs, imm", "101", "0","rt <- rs - imm");
-    AddRow(tableModel, cnt++, "muli", true, "op rt, rs, imm", "110", "0","rt <- rs * imm");
-    AddRow(tableModel, cnt++, "divi", true, "op rt, rs, imm", "111", "0","rt <- rs / imm");
-    AddRow(tableModel, cnt++, "slli", false, "op rt, rs, imm", "1000", "0","rt <- rs << imm");
-    AddRow(tableModel, cnt++, "srli", true, "op rt, rs, imm", "1001", "0","rt <- rs >> imm");
-    AddRow(tableModel, cnt++, "slai", true, "op rt, rs, imm", "1010", "0", "rt <- rs << imm");
-    AddRow(tableModel, cnt++, "srai", false, "op rt, rs, imm", "1011", "0", "rt <- rs >> imm");
-    AddRow(tableModel, cnt++, "shifti", true, "op rt, rs, imm", "1100", "0","rt <- rs shift imm");
-    AddRow(tableModel, cnt++, "andi", true, "op rt, rs, imm", "1101", "0","rt <- rs & imm");
-    AddRow(tableModel, cnt++, "ori", true, "op rt, rs, imm", "1110", "0","rt <- rs | imm");
-    AddRow(tableModel, cnt++, "nori", true, "op rt, rs, imm", "1111", "0","rt <- rs nor imm");
-    AddRow(tableModel, cnt++, "xori", true, "op rt, rs, imm", "10000", "0","rt <- rs xor imm");
+    AddRow(tableModel, cnt++, "addi", true, "rt, rs, imm", "100", "0","rt <- rs + imm", "I");
+    AddRow(tableModel, cnt++, "subi", true, "rt, rs, imm", "101", "0","rt <- rs - imm", "I");
+    AddRow(tableModel, cnt++, "muli", true, "rt, rs, imm", "110", "0","rt <- rs * imm", "I");
+    AddRow(tableModel, cnt++, "divi", true, "rt, rs, imm", "111", "0","rt <- rs / imm", "I");
+    AddRow(tableModel, cnt++, "slli", false, "rt, rs, imm", "1000", "0","rt <- rs << imm", "I");
+    AddRow(tableModel, cnt++, "srli", true, "rt, rs, imm", "1001", "0","rt <- rs >> imm", "I");
+    AddRow(tableModel, cnt++, "slai", true, "rt, rs, imm", "1010", "0", "rt <- rs << imm", "I");
+    AddRow(tableModel, cnt++, "srai", false, "rt, rs, imm", "1011", "0", "rt <- rs >> imm", "I");
+    AddRow(tableModel, cnt++, "shifti", true, "rt, rs, imm", "1100", "0","rt <- rs shift imm", "I");
+    AddRow(tableModel, cnt++, "andi", true, "rt, rs, imm", "1101", "0","rt <- rs & imm", "I");
+    AddRow(tableModel, cnt++, "ori", true, "rt, rs, imm", "1110", "0","rt <- rs | imm", "I");
+    AddRow(tableModel, cnt++, "nori", true, "rt, rs, imm", "1111", "0","rt <- rs nor imm", "I");
+    AddRow(tableModel, cnt++, "xori", true, "rt, rs, imm", "10000", "0","rt <- rs xor imm", "I");
     tableModel->setHorizontalHeaderLabels(instHHeader);
     tableModel->setVerticalHeaderLabels(int2Expalains);
     ui->IntTV2->setModel(tableModel);
@@ -429,27 +439,27 @@ void MainWindow::InitInstTVs()
         << "正接"
         << "逆正接";
     cnt = 0;
-    AddRow(tableModel, cnt++, "fmov", false, "op frt, frs", "Move", "1","frt <- frs");
-    AddRow(tableModel, cnt++, "fneg", false, "op frt, frs", "FPU", "0","frt <- -frs");
+    AddRow(tableModel, cnt++, "fmov", false, "frt, frs", "Move", "1","frt <- frs", "R");
+    AddRow(tableModel, cnt++, "fneg", false, "frt, frs", "FPU", "0","frt <- -frs", "R");
     FSETLO_ROW = cnt;
-    AddRow(tableModel, cnt++, "fmvlo", true, "op frs, imm", "10011", "0","frs[0:15] <- imm");
+    AddRow(tableModel, cnt++, "fmvlo", true, "frs, imm", "10011", "0","frs[0:15] <- imm", "I");
     FSETHI_ROW = cnt;
-    AddRow(tableModel, cnt++, "fmvhi", true, "op frs, imm", "10100", "0","frs[16:31] <- imm");
-    AddRow(tableModel, cnt++, "fadd", false, "op frd, frs, frt", "FPU", "1","frd <- frs + frt");
-    AddRow(tableModel, cnt++, "fsub", false, "op frd, frs, frt", "FPU", "10","frd <- frs - frt");
-    AddRow(tableModel, cnt++, "fmul", false, "op frd, frs, frt", "FPU", "11","frd <- frs * frt");
-    AddRow(tableModel, cnt++, "fmuln", true, "op frd, frs, frt", "FPU", "100", "frd <- -(frs * frt)");
+    AddRow(tableModel, cnt++, "fmvhi", true, "frs, imm", "10100", "0","frs[16:31] <- imm", "I");
+    AddRow(tableModel, cnt++, "fadd", false, "frd, frs, frt", "FPU", "1","frd <- frs + frt", "R");
+    AddRow(tableModel, cnt++, "fsub", false, "frd, frs, frt", "FPU", "10","frd <- frs - frt", "R");
+    AddRow(tableModel, cnt++, "fmul", false, "frd, frs, frt", "FPU", "11","frd <- frs * frt", "R");
+    AddRow(tableModel, cnt++, "fmuln", true, "frd, frs, frt", "FPU", "100", "frd <- -(frs * frt)", "R");
     // 以下2つは排他的に選択される
-    AddRow(tableModel, cnt++, "fdiv", false, "op frd, frs, frt", "FPU", "101","frd <- frs / frt");
-    AddRow(tableModel, cnt++, "finv", true, "op frt, frs", "FPU", "110","frt <- 1 / frs");
-    AddRow(tableModel, cnt++, "finvn", true, "op frt, frs", "FPU", "111","frt <- - 1 / frs");
-    AddRow(tableModel, cnt++, "fabs", true, "op frt, frs", "FPU", "1000", "frt <- fabs(frs)");
-    AddRow(tableModel, cnt++, "fsqrt", false, "op frt, frs", "FPU", "1001", "frt <- fsqrt(frs)");
-    AddRow(tableModel, cnt++, "floor", true, "op frt, frs", "FPU", "1010", "frt <- floor(frs)");
-    AddRow(tableModel, cnt++, "fsin", true, "op frt, frs", "FPU", "1011", "frt <- fsin(frs)");
-    AddRow(tableModel, cnt++, "fcos", true, "op frt, frs", "FPU", "1100", "frt <- fcos(frs)");
-    AddRow(tableModel, cnt++, "ftan", true, "op frt, frs", "FPU", "1101", "frt <- ftan(frs)");
-    AddRow(tableModel, cnt++, "fatan", true, "op frt, frs", "FPU", "1110", "frt <- fatan(frs)");
+    AddRow(tableModel, cnt++, "fdiv", false, "frd, frs, frt", "FPU", "101","frd <- frs / frt", "R");
+    AddRow(tableModel, cnt++, "finv", true, "frt, frs", "FPU", "110","frt <- 1 / frs", "R");
+    AddRow(tableModel, cnt++, "finvn", true, "frt, frs", "FPU", "111","frt <- - 1 / frs", "R");
+    AddRow(tableModel, cnt++, "fabs", true, "frt, frs", "FPU", "1000", "frt <- fabs(frs)", "R");
+    AddRow(tableModel, cnt++, "fsqrt", false, "frt, frs", "FPU", "1001", "frt <- fsqrt(frs)", "R");
+    AddRow(tableModel, cnt++, "floor", true, "frt, frs", "FPU", "1010", "frt <- floor(frs)", "R");
+    AddRow(tableModel, cnt++, "fsin", true, "frt, frs", "FPU", "1011", "frt <- fsin(frs)", "R");
+    AddRow(tableModel, cnt++, "fcos", true, "frt, frs", "FPU", "1100", "frt <- fcos(frs)", "R");
+    AddRow(tableModel, cnt++, "ftan", true, "frt, frs", "FPU", "1101", "frt <- ftan(frs)", "R");
+    AddRow(tableModel, cnt++, "fatan", true, "frt, frs", "FPU", "1110", "frt <- fatan(frs)", "R");
     tableModel->setHorizontalHeaderLabels(instHHeader);
     tableModel->setVerticalHeaderLabels(floatExpalains);
     ui->FloatTV->setModel(tableModel);
@@ -468,10 +478,10 @@ void MainWindow::InitInstTVs()
         << "バイナリ列をコピー"
         << "バイナリ列をコピー";
     cnt = 0;
-    AddRow(tableModel, cnt++, "itof", true, "op frt, rs", "Move", "10", "frt <- (float)rs");
-    AddRow(tableModel, cnt++, "ftoi", true, "op rt, frs", "Move", "11", "rt <- (int)frs");
-    AddRow(tableModel, cnt++, "imovf", true, "op frt, rs", "Move", "100", "frt <- rs");
-    AddRow(tableModel, cnt++, "fmovi", true, "op rt, frs", "Move", "101", "rt <- frs");
+    AddRow(tableModel, cnt++, "itof", true, "frt, rs", "Move", "10", "frt <- (float)rs", "R");
+    AddRow(tableModel, cnt++, "ftoi", true, "rt, frs", "Move", "11", "rt <- (int)frs", "R");
+    AddRow(tableModel, cnt++, "imovf", true, "frt, rs", "Move", "100", "frt <- rs", "R");
+    AddRow(tableModel, cnt++, "fmovi", true, "rt, frs", "Move", "101", "rt <- frs", "R");
     tableModel->setHorizontalHeaderLabels(instHHeader);
     tableModel->setVerticalHeaderLabels(ifconvExpalains);
     ui->IFConvTV->setModel(tableModel);
@@ -494,14 +504,14 @@ void MainWindow::InitInstTVs()
         << "メモリから浮動小数レジスタへロード"
         << "浮動小数レジスタをメモリへストア";
     cnt = 0;
-    AddRow(tableModel, cnt++, "ldi", false, "op rt, rs, imm", "101000", "0","rt <- RAM[rs + imm]");
-    AddRow(tableModel, cnt++, "sti", false, "op rt, rs, imm", "101001", "0","RAM[rs + imm] <- rt");
-    AddRow(tableModel, cnt++, "ldr", true, "op rd, rs, rt", "ALU", "1110", "rd <- RAM[rs + rt]");
-    AddRow(tableModel, cnt++, "str", true, "op rd, rs, rt", "ALU", "1111", "RAM[rs + rt] <- rd");
-    AddRow(tableModel, cnt++, "fldi", false, "op frt, rs, imm", "101010", "0", "frt <- RAM[rs + imm]");
-    AddRow(tableModel, cnt++, "fsti", false, "op frt, rs, imm", "101011", "0", "RAM[rs + imm] <- frt");
-    AddRow(tableModel, cnt++, "fldr", true, "op frd, rs, rt", "ALU", "10000","frd <- RAM[rs + rt]");
-    AddRow(tableModel, cnt++, "fstr", true, "op frd, rs, rt", "ALU", "10001", "RAM[rs + rt] <- frd");
+    AddRow(tableModel, cnt++, "ldi", false, "rt, rs, imm", "101000", "0","rt <- RAM[rs + imm]", "I");
+    AddRow(tableModel, cnt++, "sti", false, "rt, rs, imm", "101001", "0","RAM[rs + imm] <- rt", "I");
+    AddRow(tableModel, cnt++, "ldr", true, "rd, rs, rt", "ALU", "1110", "rd <- RAM[rs + rt]", "R");
+    AddRow(tableModel, cnt++, "str", true, "rd, rs, rt", "ALU", "1111", "RAM[rs + rt] <- rd", "R");
+    AddRow(tableModel, cnt++, "fldi", false, "frt, rs, imm", "101010", "0", "frt <- RAM[rs + imm]", "I");
+    AddRow(tableModel, cnt++, "fsti", false, "frt, rs, imm", "101011", "0", "RAM[rs + imm] <- frt", "I");
+    AddRow(tableModel, cnt++, "fldr", true, "frd, rs, rt", "ALU", "10000","frd <- RAM[rs + rt]", "R");
+    AddRow(tableModel, cnt++, "fstr", true, "frd, rs, rt", "ALU", "10001", "RAM[rs + rt] <- frd", "R");
     tableModel->setHorizontalHeaderLabels(instHHeader);
     tableModel->setVerticalHeaderLabels(memoryExpalains);
     ui->MemoryTV->setModel(tableModel);
@@ -538,30 +548,30 @@ void MainWindow::InitInstTVs()
         << "フレームポインタを減らして\nリンクしてレジスタ値へジャンプ"
         << "フレームポインタを増やして\nリンクレジスタの値へジャンプ";
     cnt = 0;
-    AddRow(tableModel, cnt++, "beq", false, "op rs, rt, imm", "10110", "0", "if rs == rt then goto (pc + imm)");
-    AddRow(tableModel, cnt++, "bne", true, "op rs, rt, imm", "10111", "0", "if rs != rt then goto (pc + imm)");
-    AddRow(tableModel, cnt++, "blt", false, "op rs, rt, imm", "11000", "0", "if rs < rt then goto (pc + imm)");
-    AddRow(tableModel, cnt++, "bgt", true, "op rs, rt, imm", "11001", "0", "if rs > rt then goto (pc + imm)");
-    AddRow(tableModel, cnt++, "ble", true, "op rs, rt, imm", "11010", "0", "if rs <= rt then goto (pc + imm)");
-    AddRow(tableModel, cnt++, "bge", true, "op rs, rt, imm", "11011", "0", "if rs >= rt then goto (pc + imm)");
-    AddRow(tableModel, cnt++, "fbeq", false, "op frs, frt, imm", "11100", "0", "if frs == frt then goto (pc + imm)");
-    AddRow(tableModel, cnt++, "fbne", true, "op frs, frt, imm", "11101", "0", "if frs != frt then goto (pc + imm)");
-    AddRow(tableModel, cnt++, "fblt", false, "op frs, frt, imm", "11110", "0", "if frs < frt then goto (pc + imm)");
-    AddRow(tableModel, cnt++, "fbgt", true, "op frs, frt, imm", "11111", "0", "if frs > frt then goto (pc + imm)");
-    AddRow(tableModel, cnt++, "fble", true, "op frs, frt, imm", "100000", "0", "if frs <= frt then goto (pc + imm)");
-    AddRow(tableModel, cnt++, "fbge", true, "op frs, frt, imm", "100001", "0", "if frs >= frt then goto (pc + imm)");
-    AddRow(tableModel, cnt++, "j", false, "op labelName", "10101", "0", "goto labelName");
-    AddRow(tableModel, cnt++, "jr", false, "op rs", "100010", "0", "goto rs");
+    AddRow(tableModel, cnt++, "beq", false, "rs, rt, imm", "10110", "0", "if rs == rt then goto (pc + imm)", "I");
+    AddRow(tableModel, cnt++, "bne", true, "rs, rt, imm", "10111", "0", "if rs != rt then goto (pc + imm)", "I");
+    AddRow(tableModel, cnt++, "blt", false, "rs, rt, imm", "11000", "0", "if rs < rt then goto (pc + imm)", "I");
+    AddRow(tableModel, cnt++, "bgt", true, "rs, rt, imm", "11001", "0", "if rs > rt then goto (pc + imm)", "I");
+    AddRow(tableModel, cnt++, "ble", true, "rs, rt, imm", "11010", "0", "if rs <= rt then goto (pc + imm)", "I");
+    AddRow(tableModel, cnt++, "bge", true, "rs, rt, imm", "11011", "0", "if rs >= rt then goto (pc + imm)", "I");
+    AddRow(tableModel, cnt++, "fbeq", false, "frs, frt, imm", "11100", "0", "if frs == frt then goto (pc + imm)", "I");
+    AddRow(tableModel, cnt++, "fbne", true, "frs, frt, imm", "11101", "0", "if frs != frt then goto (pc + imm)", "I");
+    AddRow(tableModel, cnt++, "fblt", false, "frs, frt, imm", "11110", "0", "if frs < frt then goto (pc + imm)", "I");
+    AddRow(tableModel, cnt++, "fbgt", true, "frs, frt, imm", "11111", "0", "if frs > frt then goto (pc + imm)", "I");
+    AddRow(tableModel, cnt++, "fble", true, "frs, frt, imm", "100000", "0", "if frs <= frt then goto (pc + imm)", "I");
+    AddRow(tableModel, cnt++, "fbge", true, "frs, frt, imm", "100001", "0", "if frs >= frt then goto (pc + imm)", "I");
+    AddRow(tableModel, cnt++, "j", false, "labelName", "10101", "0", "goto labelName", "J");
+    AddRow(tableModel, cnt++, "jr", false, "rs", "100010", "0", "goto rs", "R");
     // 低・高機能は排他的に
     LOW_CALL = cnt;
-    AddRow(tableModel, cnt++, "", true, "", "", "",  "");
-    AddRow(tableModel, cnt++, "jal", false, "op labelName", "100011", "0", "link register <- pc; goto labelName");
-    AddRow(tableModel, cnt++, "jalr", false, "op rs", "100100", "0", "link register <- pc; goto rs");
+    AddRow(tableModel, cnt++, "", true, "", "", "",  "", "");
+    AddRow(tableModel, cnt++, "jal", false, "labelName", "100011", "0", "link register <- pc; goto labelName", "J");
+    AddRow(tableModel, cnt++, "jalr", false, "rs", "100100", "0", "link register <- pc; goto rs", "R");
     HIGH_CALL = cnt;
-    AddRow(tableModel, cnt++, "", true, "", "", "",  "");
-    AddRow(tableModel, cnt++, "call", false, "op labelName", "100101", "0", "RAM[frame pointer] <- link register\nframe pointer--\nlink register <- pc; goto labelName");
-    AddRow(tableModel, cnt++, "callr", false, "op reg", "100110", "0","RAM[frame pointer] <- link register\nframe pointer--\nlink register <- pc; goto rs");
-    AddRow(tableModel, cnt++, "return", false, "op", "100111", "0", "RAM[frame pointer] <- link register\nframe pointer++\ngoto link register");
+    AddRow(tableModel, cnt++, "", true, "", "", "",  "", "");
+    AddRow(tableModel, cnt++, "call", false, "labelName", "100101", "0", "RAM[frame pointer] <- link register\nframe pointer--\nlink register <- pc; goto labelName", "J");
+    AddRow(tableModel, cnt++, "callr", false, "reg", "100110", "0","RAM[frame pointer] <- link register\nframe pointer--\nlink register <- pc; goto rs", "R");
+    AddRow(tableModel, cnt++, "return", false, "op", "100111", "0", "RAM[frame pointer] <- link register\nframe pointer++\ngoto link register", "R");
     tableModel->setHorizontalHeaderLabels(instHHeader);
     tableModel->setVerticalHeaderLabels(branchExpalains);
     ui->BranchTV->setModel(tableModel);
@@ -575,21 +585,21 @@ void MainWindow::InitInstTVs()
     ioModel = tableModel;
     ioExpalains.clear();
     ioExpalains
-        <<"rs <- ReadByte()"
-        <<"rs <- ReadWord()"
-        <<"frs <- ReadWord()"
-        <<"WriteByte(rs & 0xf)"
-        <<"WriteWord(rs)"
-        <<"WriteWord(frs)"
+        <<"1byte読み込み"
+        <<"1word読み込み"
+        <<"1byte浮動小数レジスタに読み込み"
+        <<"1byte書き出し"
+        <<"1word書き出し"
+        <<"1byte浮動小数レジスタから書き出し"
         <<"プログラムを終了";
     cnt = 0;
-    AddRow(tableModel, cnt++, "inputb", false, "op rs", "System", "0","rs <- ReadByte()");
-    AddRow(tableModel, cnt++, "inputw", true, "op rs", "System", "1","rs <- ReadWord()");
-    AddRow(tableModel, cnt++, "inputf", true, "op frs", "System", "10","frs <- ReadWord()");
-    AddRow(tableModel, cnt++, "outputb", false, "op rs", "System", "11","WriteByte(rs & 0xf)");
-    AddRow(tableModel, cnt++, "outputw", true, "op rs", "System", "100","WriteWord(rs)");
-    AddRow(tableModel, cnt++, "outputf", true, "op frs", "System", "101","WriteWord(frs)");
-    AddRow(tableModel, cnt++, "halt", false, "op", "System", "110", "");
+    AddRow(tableModel, cnt++, "inputb", false, "rs", "System", "0","rs <- ReadByte()", "R");
+    AddRow(tableModel, cnt++, "inputw", true, "rs", "System", "1","rs <- ReadWord()", "R");
+    AddRow(tableModel, cnt++, "inputf", true, "frs", "System", "10","frs <- ReadWord()", "R");
+    AddRow(tableModel, cnt++, "outputb", false, "rs", "System", "11","WriteByte(rs & 0xf)", "R");
+    AddRow(tableModel, cnt++, "outputw", true, "rs", "System", "100","WriteWord(rs)", "R");
+    AddRow(tableModel, cnt++, "outputf", true, "frs", "System", "101","WriteWord(frs)", "R");
+    AddRow(tableModel, cnt++, "halt", false, " ", "System", "110", "", "R");
     tableModel->setHorizontalHeaderLabels(instHHeader);
     tableModel->setVerticalHeaderLabels(ioExpalains);
     ui->IOTV->setModel(tableModel);
@@ -628,6 +638,7 @@ void MainWindow::ChangeRegNames(QStandardItem *item)
 
 void MainWindow::ToggleCallMode(QStandardItem* item)
 {
+    disconnect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ToggleCallMode(QStandardItem*)));
     bool lowCell = item->column() == 4 && item->row() == LOW_CALL;
     bool highCell = item->column() == 4 && item->row() == HIGH_CALL;
     bool check = item->checkState() == Qt::Checked;
@@ -644,6 +655,21 @@ void MainWindow::ToggleCallMode(QStandardItem* item)
     {
         branchModel->setItem(i, 4, new QStandardItem(!isLow ? "必須" : "使わない"));
     }
+    connect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ToggleCallMode(QStandardItem*)));
+}
+
+// 命令名が変わったら「アセンブリ形式」を修正
+void MainWindow::ChangeAsmForm(QStandardItem* item)
+{
+    disconnect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ToggleCallMode(QStandardItem*)));
+    QStandardItemModel* model = item->model();
+    int row = item->row();
+    int col = item->column();
+    if (col != 1) return;
+    QString text = model->item(row, 0)->text();
+    int len = text.split(' ')[0].length();
+    model->item(row, 0)->setText(text.replace(0, len, model->item(row, 1)->text()));
+    connect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ToggleCallMode(QStandardItem*)));
 }
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -654,8 +680,15 @@ MainWindow::MainWindow(QWidget *parent) :
     setWindowTitle("CPUExSolver2");
     InitGeneralTV();
     InitInstTVs();
-    connect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ToggleCallMode(QStandardItem*)));
     connect(generalModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeRegNames(QStandardItem*)));
+    connect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ToggleCallMode(QStandardItem*)));
+    connect(int1Model, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeAsmForm(QStandardItem*)));
+    connect(int2Model, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeAsmForm(QStandardItem*)));
+    connect(floatModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeAsmForm(QStandardItem*)));
+    connect(ifconvModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeAsmForm(QStandardItem*)));
+    connect(memoryModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeAsmForm(QStandardItem*)));
+    connect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeAsmForm(QStandardItem*)));
+    connect(ioModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeAsmForm(QStandardItem*)));
     branchModel->item(LOW_CALL, 4)->setCheckState(Qt::Unchecked);
 }
 
@@ -691,6 +724,7 @@ QString MainWindow::GetInstTag(QStandardItemModel* model, int row, QString type,
     return GetInstTag(model, row, type, relativeAddress, use);
 }
 
+// 設定ファイルを生成
 bool MainWindow::WriteXML(QString filepath)
 {
     QFile file(filepath);
@@ -890,6 +924,94 @@ bool MainWindow::WriteXML(QString filepath)
     return true;
 }
 
+QString MainWindow::ReformBinaryValue(QString binVal, int length)
+{
+    const QString delimiter = "\t";
+    if (binVal.isEmpty()) return binVal;
+    int zeros = length - binVal.length();
+    for (int i = 0; i < zeros; i++) binVal = "0" + binVal;
+    for (int i = binVal.length() - 1; i > 0; i--) binVal.insert(i, delimiter);
+    return binVal;
+}
+
+bool MainWindow::WriteTVsToCSV(QStandardItemModel* model, QStringList& explainList, QTextStream& out)
+{
+    const QString delimiter = "\t";
+    for (int row = 0; row < model->rowCount(); row++)
+    {
+        if (model->item(row, 0)->text().trimmed().isEmpty()) continue;
+        bool use =  model->item(row, 4)->text() == "必須" || model->item(row, 4)->checkState() == Qt::Checked;
+        if (use == false) continue;
+        QString name = model->item(row, 1)->text();
+        QString explain = explainList[row].replace("\n", "");
+        QString binForm = model->item(row, 6)->text();
+        QString asmForm = model->item(row, 0)->text();
+        QString code = model->item(row, 5)->text().replace("\n", "; ");
+        QString op = model->item(row, 2)->text();
+        if (IsConstBinaryName(op)) op = GetConstBinaryValue(op);
+        QString funct = binForm == "R" ? model->item(row, 3)->text() : "";
+        out << name << delimiter
+            << explain << delimiter
+            << binForm << delimiter
+            << asmForm << delimiter
+            << code << delimiter
+            << ReformBinaryValue(op, BINARY_LENGTH) << delimiter
+            << ReformBinaryValue(funct,BINARY_LENGTH) << "\n";
+    }
+    return true;
+}
+
+
+// アーキテクチャの仕様書を生成
+// TODO
+bool MainWindow::WriteCSV(QString filepath)
+{
+    const QString delimiter = "\t";
+    QFile file(filepath);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text) == false)
+    {
+        QMessageBox::critical(NULL, "書き込みエラー", "設定ファイルの書き込みに失敗しました", QMessageBox::Ok);
+        return false;
+    }
+    QTextStream out(&file);
+    out.setCodec("UTF-8");
+
+    for (int row = 0; row < generalOptions.length(); row++)
+    {
+        out << generalOptions[row] << delimiter << generalModel->item(row)->text() << "\n";
+    }
+
+    out << "\n";
+    out << "\n";
+
+    out << QString("命令形式") << "\n";
+    out << QString("R") << delimiter << "op(6bit)" << delimiter << "rs(5bit)" << delimiter << "rt(5bit)" << delimiter << "rd(5bit)" << delimiter << "shamt(5bit)"  << delimiter << "funct(5bit)" << "\n";
+    out << QString("I") << delimiter << "op(6bit)" << delimiter << "rs(5bit)" << delimiter << "rt(5bit)" << delimiter << "imm(16bit)" << "\n";
+    out << QString("J") << delimiter << "op(6bit)" << delimiter << "target(26bit)" << "\n";
+
+    out << "\n";
+    out << "\n";
+
+    out << QString("命令名") << delimiter
+        << QString("説明") << delimiter
+        << QString("命令形式") << delimiter
+        << QString("アセンブリ形式") << delimiter
+        << QString("擬似コード") << delimiter
+        << QString("op") << delimiter << delimiter << delimiter << delimiter << delimiter << delimiter
+        << QString("funct") << "\n";
+
+    WriteTVsToCSV(int1Model, int1Expalains, out);
+    WriteTVsToCSV(int2Model, int2Expalains, out);
+    WriteTVsToCSV(floatModel, floatExpalains, out);
+    WriteTVsToCSV(ifconvModel, ifconvExpalains, out);
+    WriteTVsToCSV(memoryModel, memoryExpalains, out);
+    WriteTVsToCSV(branchModel, branchExpalains, out);
+    WriteTVsToCSV(ioModel, ioExpalains, out);
+
+    file.close();
+    return true;
+}
+
 bool MainWindow::ErrorMsg(QString msg)
 {
     QMessageBox::critical(NULL, "設定エラー", msg, QMessageBox::Ok);
@@ -942,10 +1064,10 @@ void MainWindow::CheckModel(QStandardItemModel* model, QString tabName, QStringL
     const QString BINARY_LEN_STR = tmp.number(BINARY_LENGTH);
     for (int row = 0; row < model->rowCount(); row++)
     {
-        if (model->item(row, 0)->text().isEmpty()) continue;
+        if (model->item(row, 0)->text().trimmed().isEmpty()) continue;
         QString name = model->item(row, 1)->text();
         QString op = model->item(row, 2)->text();
-        QString funct = model->item(row, 3)->text();
+        QString funct = model->item(row, 3)->isEditable() ? model->item(row, 3)->text() : "0";
         if (!ValidString(name))
         {
             flg = false;
@@ -1068,6 +1190,8 @@ void MainWindow::CreateArchitecture()
     if (filepath == "" || !QDir(filepath).exists()) return;
     QString configFile = generalModel->item(ARCHITECTURE)->text() + ".xml";
     if (WriteXML("templates/" + configFile) == false) return;
+    QString specFile = "specifications.csv.tmpl";
+    if (WriteCSV("templates/" + specFile) == false) return;
     genDlg.Run("../" + configFile, filepath + "/" + generalModel->item(ARCHITECTURE)->text());
     genDlg.show();
 }
