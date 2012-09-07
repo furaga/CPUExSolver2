@@ -73,7 +73,7 @@ private:
     GenerateDialog genDlg;
 
     void UpdateRegisters();
-    void AddRow(QStandardItemModel*, int, QString, bool, QString, QString, QString, QString, QString);
+    void AddRow(QStandardItemModel*, int, QString, bool, QString, QString, QString, QString, QString, bool);
     void InitGeneralTV();
     void InitInstTVs();
     void ChangeRegName(int, int, QStringList&);

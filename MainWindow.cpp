@@ -248,7 +248,8 @@ void MainWindow::AddRow(
         QString opcode,
         QString funct,
         QString code,
-        QString binForm)
+        QString binForm,
+        bool check = true)
 {
     QStandardItem* item = new QStandardItem(instName + " " + args); item->setEditable(false);
     model->setItem(row, 0, item);
@@ -268,8 +269,14 @@ void MainWindow::AddRow(
         QStandardItem* item0 = new QStandardItem(true);
         item0->setEditable(false);
         item0->setCheckable(true);
-        item0->setCheckState(Qt::Checked);
-//        item0->setCheckState(Qt::Unchecked);
+        if (check)
+        {
+            item0->setCheckState(Qt::Checked);
+        }
+        else
+        {
+            item0->setCheckState(Qt::Unchecked);
+        }
         model->setItem(row, 4, item0);
     }
     else
@@ -344,18 +351,18 @@ void MainWindow::InitInstTVs()
         << "排他的論理和"
         << "ビット反転";
     cnt = 0;
-    AddRow(tableModel, cnt++, "mov", true, "rt, rs", "Move", "0", "rt <- rs", "R");
+    AddRow(tableModel, cnt++, "mov", true, "rt, rs", "Move", "0", "rt <- rs", "R", false);
     ADD_ROW = cnt;
     AddRow(tableModel, cnt++, "add", false, "rd, rs, rt", "ALU", "0", "rd <- rs + rt", "R");
     SUB_ROW = cnt;
     AddRow(tableModel, cnt++, "sub", false, "rd, rs, rt", "ALU", "1","rd <- rs - rt", "R");
     AddRow(tableModel, cnt++, "mul", true, "rd, rs, rt", "ALU", "10","rd <- rs * rt", "R");
-    AddRow(tableModel, cnt++, "div", true, "rd, rs, rt", "ALU", "11","rd <- rs / rt", "R");
-    AddRow(tableModel, cnt++, "sll", true, "rd, rs, rt", "ALU", "100","rd <- rs << rt", "R");
-    AddRow(tableModel, cnt++, "srl", true, "rd, rs, rt", "ALU", "101","rd <- rs >> rt", "R");
-    AddRow(tableModel, cnt++, "sla", true, "rd, rs, rt", "ALU", "110","rd <- rs << rt", "R");
-    AddRow(tableModel, cnt++, "sra", true, "rd, rs, rt", "ALU", "111","rd <- rs >> rt", "R");
-    AddRow(tableModel, cnt++, "shift", true, "rd, rs, rt", "ALU", "1000","rd <- rs shift rt", "R");
+    AddRow(tableModel, cnt++, "div", true, "rd, rs, rt", "ALU", "11","rd <- rs / rt", "R", false);
+    AddRow(tableModel, cnt++, "sll", true, "rd, rs, rt", "ALU", "100","rd <- rs << rt", "R", false);
+    AddRow(tableModel, cnt++, "srl", true, "rd, rs, rt", "ALU", "101","rd <- rs >> rt", "R", false);
+    AddRow(tableModel, cnt++, "sla", true, "rd, rs, rt", "ALU", "110","rd <- rs << rt", "R", false);
+    AddRow(tableModel, cnt++, "sra", true, "rd, rs, rt", "ALU", "111","rd <- rs >> rt", "R", false);
+    AddRow(tableModel, cnt++, "shift", true, "rd, rs, rt", "ALU", "1000","rd <- rs shift rt", "R", false);
     AddRow(tableModel, cnt++, "and", true, "rd, rs, rt", "ALU", "1001","rd <- rs & rt", "R");
     AddRow(tableModel, cnt++, "or", true, "rd, rs, rt", "ALU", "1010","rd <- rs | rt", "R");
     NOR_ROW = cnt;
@@ -397,12 +404,12 @@ void MainWindow::InitInstTVs()
     AddRow(tableModel, cnt++, "addi", true, "rt, rs, imm", "100", "0","rt <- rs + imm", "I");
     AddRow(tableModel, cnt++, "subi", true, "rt, rs, imm", "101", "0","rt <- rs - imm", "I");
     AddRow(tableModel, cnt++, "muli", true, "rt, rs, imm", "110", "0","rt <- rs * imm", "I");
-    AddRow(tableModel, cnt++, "divi", true, "rt, rs, imm", "111", "0","rt <- rs / imm", "I");
+    AddRow(tableModel, cnt++, "divi", true, "rt, rs, imm", "111", "0","rt <- rs / imm", "I", false);
     AddRow(tableModel, cnt++, "slli", false, "rt, rs, imm", "1000", "0","rt <- rs << imm", "I");
-    AddRow(tableModel, cnt++, "srli", true, "rt, rs, imm", "1001", "0","rt <- rs >> imm", "I");
-    AddRow(tableModel, cnt++, "slai", true, "rt, rs, imm", "1010", "0", "rt <- rs << imm", "I");
+    AddRow(tableModel, cnt++, "srli", true, "rt, rs, imm", "1001", "0","rt <- rs >> imm", "I", false);
+    AddRow(tableModel, cnt++, "slai", true, "rt, rs, imm", "1010", "0", "rt <- rs << imm", "I", false);
     AddRow(tableModel, cnt++, "srai", false, "rt, rs, imm", "1011", "0", "rt <- rs >> imm", "I");
-    AddRow(tableModel, cnt++, "shifti", true, "rt, rs, imm", "1100", "0","rt <- rs shift imm", "I");
+    AddRow(tableModel, cnt++, "shifti", true, "rt, rs, imm", "1100", "0","rt <- rs shift imm", "I", false);
     AddRow(tableModel, cnt++, "andi", true, "rt, rs, imm", "1101", "0","rt <- rs & imm", "I");
     AddRow(tableModel, cnt++, "ori", true, "rt, rs, imm", "1110", "0","rt <- rs | imm", "I");
     AddRow(tableModel, cnt++, "nori", true, "rt, rs, imm", "1111", "0","rt <- rs nor imm", "I");
@@ -451,15 +458,15 @@ void MainWindow::InitInstTVs()
     AddRow(tableModel, cnt++, "fmuln", true, "frd, frs, frt", "FPU", "100", "frd <- -(frs * frt)", "R");
     // 以下2つは排他的に選択される
     AddRow(tableModel, cnt++, "fdiv", false, "frd, frs, frt", "FPU", "101","frd <- frs / frt", "R");
-    AddRow(tableModel, cnt++, "finv", true, "frt, frs", "FPU", "110","frt <- 1 / frs", "R");
-    AddRow(tableModel, cnt++, "finvn", true, "frt, frs", "FPU", "111","frt <- - 1 / frs", "R");
-    AddRow(tableModel, cnt++, "fabs", true, "frt, frs", "FPU", "1000", "frt <- fabs(frs)", "R");
+    AddRow(tableModel, cnt++, "finv", true, "frt, frs", "FPU", "110","frt <- 1 / frs", "R", false);
+    AddRow(tableModel, cnt++, "finvn", true, "frt, frs", "FPU", "111","frt <- - 1 / frs", "R", false);
+    AddRow(tableModel, cnt++, "fabs", true, "frt, frs", "FPU", "1000", "frt <- fabs(frs)", "R", false);
     AddRow(tableModel, cnt++, "fsqrt", false, "frt, frs", "FPU", "1001", "frt <- fsqrt(frs)", "R");
-    AddRow(tableModel, cnt++, "floor", true, "frt, frs", "FPU", "1010", "frt <- floor(frs)", "R");
-    AddRow(tableModel, cnt++, "fsin", true, "frt, frs", "FPU", "1011", "frt <- fsin(frs)", "R");
-    AddRow(tableModel, cnt++, "fcos", true, "frt, frs", "FPU", "1100", "frt <- fcos(frs)", "R");
-    AddRow(tableModel, cnt++, "ftan", true, "frt, frs", "FPU", "1101", "frt <- ftan(frs)", "R");
-    AddRow(tableModel, cnt++, "fatan", true, "frt, frs", "FPU", "1110", "frt <- fatan(frs)", "R");
+    AddRow(tableModel, cnt++, "floor", true, "frt, frs", "FPU", "1010", "frt <- floor(frs)", "R", false);
+    AddRow(tableModel, cnt++, "fsin", true, "frt, frs", "FPU", "1011", "frt <- fsin(frs)", "R", false);
+    AddRow(tableModel, cnt++, "fcos", true, "frt, frs", "FPU", "1100", "frt <- fcos(frs)", "R", false);
+    AddRow(tableModel, cnt++, "ftan", true, "frt, frs", "FPU", "1101", "frt <- ftan(frs)", "R", false);
+    AddRow(tableModel, cnt++, "fatan", true, "frt, frs", "FPU", "1110", "frt <- fatan(frs)", "R", false);
     tableModel->setHorizontalHeaderLabels(instHHeader);
     tableModel->setVerticalHeaderLabels(floatExpalains);
     ui->FloatTV->setModel(tableModel);
