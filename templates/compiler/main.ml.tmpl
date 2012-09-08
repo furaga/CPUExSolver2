@@ -41,7 +41,7 @@ let lexbuf outchan l = (* バッファをコンパイルしてチャンネルへ
 
 (*ignore (Coloring.f (Block.f simm));*)
 	if !Closure.exist_cls then
-		((* RegAlloc3はクロージャが作られたときにバグるのでRegAllocで代用 *)
+		((* RegAllocWithColoringはクロージャが作られたときには使えないのでRegAllocで代用 *)
 		Emit.f outchan 	(RegAlloc.f simm))
 	else
 		(Emit.f outchan (RegAllocWithColoring.f (Block.f simm)))
