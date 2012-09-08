@@ -616,6 +616,8 @@ void MainWindow::InitInstTVs()
 
 void MainWindow::ChangeRegName(int row, int index, QStringList& iregs)
 {
+    if (index < 0) index = 0;
+    if (index >= iregs.length()) index = iregs.length() - 1;
     ComboBoxDelegate* cdel = (ComboBoxDelegate*)ui->GeneralTV->itemDelegateForRow(row);
     cdel->itemList = iregs;
     ui->GeneralTV->setItemDelegateForRow(row, cdel);
@@ -624,7 +626,7 @@ void MainWindow::ChangeRegName(int row, int index, QStringList& iregs)
 
 void MainWindow::ChangeRegNames(QStandardItem *item)
 {
-    if (item->row() != IREG_PREFIX) return;
+//    if (item->row() != IREG_PREFIX) return;
 
     disconnect(generalModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeRegNames(QStandardItem*)));
     int zr_index = GetRegIndex(generalModel->item(ZR)->text());
@@ -645,7 +647,8 @@ void MainWindow::ChangeRegNames(QStandardItem *item)
 
 void MainWindow::ToggleCallMode(QStandardItem* item)
 {
-    disconnect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ToggleCallMode(QStandardItem*)));
+ //   disconnect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ToggleCallMode(QStandardItem*)));
+ //   disconnect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeAsmForm(QStandardItem*)));
     bool lowCell = item->column() == 4 && item->row() == LOW_CALL;
     bool highCell = item->column() == 4 && item->row() == HIGH_CALL;
     bool check = item->checkState() == Qt::Checked;
@@ -662,13 +665,15 @@ void MainWindow::ToggleCallMode(QStandardItem* item)
     {
         branchModel->setItem(i, 4, new QStandardItem(!isLow ? "必須" : "使わない"));
     }
-    connect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ToggleCallMode(QStandardItem*)));
+ //   connect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeAsmForm(QStandardItem*)));
+ //   connect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ToggleCallMode(QStandardItem*)));
 }
 
 // 命令名が変わったら「アセンブリ形式」を修正
 void MainWindow::ChangeAsmForm(QStandardItem* item)
 {
-    disconnect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ToggleCallMode(QStandardItem*)));
+//    disconnect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ToggleCallMode(QStandardItem*)));
+  //  disconnect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeAsmForm(QStandardItem*)));
     QStandardItemModel* model = item->model();
     int row = item->row();
     int col = item->column();
@@ -676,7 +681,8 @@ void MainWindow::ChangeAsmForm(QStandardItem* item)
     QString text = model->item(row, 0)->text();
     int len = text.split(' ')[0].length();
     model->item(row, 0)->setText(text.replace(0, len, model->item(row, 1)->text()));
-    connect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ToggleCallMode(QStandardItem*)));
+//    connect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeAsmForm(QStandardItem*)));
+  //  connect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ToggleCallMode(QStandardItem*)));
 }
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -688,7 +694,6 @@ MainWindow::MainWindow(QWidget *parent) :
     InitGeneralTV();
     InitInstTVs();
     connect(generalModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeRegNames(QStandardItem*)));
-    connect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ToggleCallMode(QStandardItem*)));
     connect(int1Model, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeAsmForm(QStandardItem*)));
     connect(int2Model, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeAsmForm(QStandardItem*)));
     connect(floatModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeAsmForm(QStandardItem*)));
@@ -696,6 +701,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(memoryModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeAsmForm(QStandardItem*)));
     connect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeAsmForm(QStandardItem*)));
     connect(ioModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ChangeAsmForm(QStandardItem*)));
+    connect(branchModel, SIGNAL(itemChanged(QStandardItem*)), this, SLOT(ToggleCallMode(QStandardItem*)));
     branchModel->item(LOW_CALL, 4)->setCheckState(Qt::Unchecked);
 }
 
