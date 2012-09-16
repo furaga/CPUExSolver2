@@ -3,22 +3,23 @@
 #include <caml/alloc.h>
 
 // TODO float用に書き換え
+
 typedef union
 {
-  int32 i[2];
-  double d;
-} flt;
+  int i;
+  float f;
+} fi;
 
 value gethi(value v)
 {
-  flt d;
-  d.d = (double)Double_val(v);
-  return copy_int32(d.i[0]);
+  fi f;
+  f.f = (float)Double_val(v);
+  return copy_int32(f.i >> 16);
 }
 
 value getlo(value v)
 {
-  flt d;
-  d.d = Double_val(v);
-  return copy_int32(d.i[1]);
+  fi f;
+  f.f = (float)Double_val(v);
+  return copy_int32(f.i & 0xffff);
 }
