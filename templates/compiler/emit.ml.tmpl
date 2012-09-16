@@ -159,23 +159,13 @@ and g' oc = function
 		(* IEEE756の仕様を満たす範囲内で、C言語と微妙に仕様が違うようなので結構アドホック *)
 		let hi = Int32.to_int (gethi f) in
 		let lo = Int32.to_int (getlo f) in
-		let s = lo lsr 31 in
-		let exp = (lo lsr 20) mod (1 lsl 12) in
-		let frac = lo mod (1 lsl 20) in
-		let b =
-			if exp = 0 && frac = 0 then
-				s lsl 31
-			else (
-				let exp = exp - (if s > 0 && frac <> 0 then 895 else 896) in (* 負の数だと1ずれる？ *)
-				let frac = (frac lsl 3) + (hi lsr 29) in
-				(s lsl 31) + (exp lsl 23) + frac
-			) in
-		Output.add_stmt (Output.Comment (Printf.sprintf "\t${comment} %f" f));
+		Output.add_stmt (Output.Comment (Printf.sprintf "\t${config.comment} %f" f));
 ## SETHI, SETLO, STI, LDIは絶対ある
 % if isUse("FSETHI") and isUse("FSETLO"):
-		Output.add_stmt (Output.FMvhi (x, (b lsr 16) mod (1 lsl 16)));
-		Output.add_stmt (Output.FMvlo (x, (b mod (1 lsl 16))));
+		Output.add_stmt (Output.FMvhi (x, hi));
+		Output.add_stmt (Output.FMvlo (x, lo));
 % elif isUse("ADDI"):
+(* このへんどう書き換えていいかわからないので対応おねがいします *)
 		if -32768 < b && b <= 32768 then (
 		  	Output.add_stmt (Output.Addi (reg_sw, reg_0, b));
 		  	let ss = get_stacksize () in
